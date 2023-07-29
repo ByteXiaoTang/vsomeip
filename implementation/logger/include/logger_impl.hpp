@@ -41,7 +41,7 @@ private:
 private:
     static std::mutex mutex__;
     std::shared_ptr<configuration> configuration_;
-
+    static bool init_flag;
 #ifdef USE_DLT
     DLT_DECLARE_CONTEXT(dlt_);
 #endif

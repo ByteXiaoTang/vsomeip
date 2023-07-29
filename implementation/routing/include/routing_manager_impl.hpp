@@ -493,6 +493,9 @@ private:
         msg_statistic_t> message_statistics_;
     std::tuple<service_t, instance_t, method_t> message_to_discard_;
     uint32_t ignored_statistics_counter_;
+
+    //add by tmz 2021/04/12
+    std::atomic<bool> mKeyLogEnableFlag;
 };
 
 }  // namespace vsomeip_v3

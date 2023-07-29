@@ -39,7 +39,7 @@ class configuration_impl:
         public configuration,
         public std::enable_shared_from_this<configuration_impl> {
 public:
-    VSOMEIP_EXPORT configuration_impl();
+    VSOMEIP_EXPORT configuration_impl(const std::string& cfg_file);
     VSOMEIP_EXPORT configuration_impl(const configuration_impl &_other);
     VSOMEIP_EXPORT virtual ~configuration_impl();
 
@@ -381,6 +381,8 @@ private:
 
 private:
     std::mutex mutex_;
+
+    std::string mConfigFile;
 
     const std::string default_unicast_;
     bool is_loaded_;

@@ -17,6 +17,7 @@
 #include <vsomeip/payload.hpp>
 #include <vsomeip/runtime.hpp>
 #include <vsomeip/trace.hpp>
+#include <vsomeip/byteorder.hpp>
 
 namespace vsomeip = vsomeip_v3;
 

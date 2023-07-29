@@ -34,7 +34,7 @@ runtime_impl::~runtime_impl() {
 }
 
 std::shared_ptr<application> runtime_impl::create_application(
-        const std::string &_name) {
+        const std::string &_name, const std::string& cfg_file) {
     static std::uint32_t postfix_id = 0;
     std::lock_guard<std::mutex> its_lock(applications_mutex_);
     std::string its_name_ = _name;
@@ -42,7 +42,7 @@ std::shared_ptr<application> runtime_impl::create_application(
     if( found_application != applications_.end()) {
         its_name_ += "_" + std::to_string(postfix_id++);
     }
-    std::shared_ptr<application> application = std::make_shared<application_impl>(its_name_);
+    std::shared_ptr<application> application = std::make_shared<application_impl>(its_name_, cfg_file);
     applications_[its_name_] = application;
     return application;
 }

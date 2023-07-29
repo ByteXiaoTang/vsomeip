@@ -10,6 +10,7 @@
 #include <sstream>
 #include <limits>
 #include <utility>
+#include <iostream>
 
 #define WIN32_LEAN_AND_MEAN
 
@@ -38,8 +39,9 @@
 namespace vsomeip_v3 {
 namespace cfg {
 
-configuration_impl::configuration_impl()
-    : default_unicast_("local"),
+configuration_impl::configuration_impl(const std::string& cfg_file)
+    : mConfigFile(cfg_file),
+      default_unicast_("local"),
       is_loaded_(false),
       is_logging_loaded_(false),
       is_overlay_(false),
@@ -103,6 +105,7 @@ configuration_impl::configuration_impl()
 
 configuration_impl::configuration_impl(const configuration_impl &_other)
     : std::enable_shared_from_this<configuration_impl>(_other),
+      mConfigFile(_other.mConfigFile),
       default_unicast_(_other.default_unicast_),
       is_loaded_(_other.is_loaded_),
       is_logging_loaded_(_other.is_logging_loaded_),
@@ -225,15 +228,28 @@ bool configuration_impl::load(const std::string &_name) {
     }
 
     // Override with path from environment (if existing)
-    const char *its_env = getenv(VSOMEIP_ENV_CONFIGURATION);
-    if (nullptr != its_env) {
-        if (utility::is_file(its_env)) {
-            its_file = its_env;
-            its_folder = "";
-        } else if (utility::is_folder(its_env)) {
-            its_folder = its_env;
-            its_file = "";
-        }
+    //const char *its_env = getenv(VSOMEIP_ENV_CONFIGURATION);
+
+    // if (nullptr != its_env) {
+    //     if (utility::is_file(its_env)) {
+    //         its_file = its_env;
+    //         its_folder = "";
+    //     } else if (utility::is_folder(its_env)) {
+    //         its_folder = its_env;
+    //         its_file = "";
+    //     }
+    // }
+
+    VSOMEIP_WARNING << "[App name:" << _name << ", Configuration file:" << mConfigFile <<"]";
+    std::cerr << "[App name:" << _name << ", Configuration file:" << mConfigFile <<"]" << std::endl;
+    
+    if (utility::is_file(mConfigFile)) {
+        its_file = mConfigFile;
+        its_folder = "";
+    } else {
+        VSOMEIP_WARNING << "[Configuration file error]";
+        std::cerr << "[Configuration file error]" << std::endl;
+        return false;
     }
 
     std::set<std::string> its_input;
@@ -253,13 +269,13 @@ bool configuration_impl::load(const std::string &_name) {
     }
 
     // Determine standard configuration file
-    its_env = getenv(VSOMEIP_ENV_MANDATORY_CONFIGURATION_FILES);
-    if (nullptr != its_env) {
-        std::string its_temp(its_env);
-        set_mandatory(its_temp);
-    } else {
-        set_mandatory(VSOMEIP_MANDATORY_CONFIGURATION_FILES);
-    }
+    // const char *its_env = getenv(VSOMEIP_ENV_MANDATORY_CONFIGURATION_FILES);
+    // if (nullptr != its_env) {
+    //     std::string its_temp(its_env);
+    //     set_mandatory(its_temp);
+    // } else {
+    //     set_mandatory(VSOMEIP_MANDATORY_CONFIGURATION_FILES);
+    // }
 
     // Start reading
     std::set<std::string> its_failed;

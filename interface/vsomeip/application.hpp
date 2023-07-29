@@ -920,6 +920,15 @@ public:
     virtual void remove_security_policy_configuration(uint32_t _uid,
                                                       uint32_t _gid,
                                                       security_update_handler_t _handler) = 0;
+
+
+    /**
+     * \brief Registers a handler which will be called when message is request
+     *
+     * \param _handler The handler to be called
+     */
+
+    virtual void register_send_request_message_session_handler(send_request_message_session_t _handler) = 0;                                                    
 };
 
 /** @} */

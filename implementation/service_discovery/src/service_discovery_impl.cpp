@@ -73,7 +73,9 @@ service_discovery_impl::service_discovery_impl(
       is_diagnosis_(false),
       last_msg_received_timer_(_host->get_io()),
       last_msg_received_timer_timeout_(VSOMEIP_SD_DEFAULT_CYCLIC_OFFER_DELAY +
-                                           (VSOMEIP_SD_DEFAULT_CYCLIC_OFFER_DELAY / 10)) {
+                                           (VSOMEIP_SD_DEFAULT_CYCLIC_OFFER_DELAY / 10)),
+      mKeyLogEnableFlag(false) 
+      {
 
     next_subscription_expiration_ = std::chrono::steady_clock::now() + std::chrono::hours(24);
 }
@@ -135,6 +137,23 @@ service_discovery_impl::init() {
     ttl_factor_subscriptions_ = configuration_->get_ttl_factor_subscribes();
     last_msg_received_timer_timeout_ = cyclic_offer_delay_
             + (cyclic_offer_delay_ / 10);
+
+    //add by tmz 2021/04/12
+    {
+        const char *its_name = getenv(VSOMEIP_ENV_SD_KEY_LOG_ENABLE_FLAG);
+        if (nullptr != its_name) {
+            std::string log_enable  = its_name;
+            if (log_enable == "enable")
+            {
+                mKeyLogEnableFlag = true;
+            }
+            else
+            {
+                mKeyLogEnableFlag = false;
+            }
+        }
+        VSOMEIP_WARNING << "VSOMEIP_ENV_SD_KEY_LOG_ENABLE_FLAG=" << mKeyLogEnableFlag.load();
+    }
 }
 
 void
@@ -1733,7 +1752,9 @@ service_discovery_impl::process_eventgroupentry(
             its_info = std::make_shared<eventgroupinfo>(its_service, its_instance,
                     its_eventgroup, its_major, its_ttl);
             boost::system::error_code ec;
-            VSOMEIP_ERROR << __func__
+            if (mKeyLogEnableFlag.load())
+            {
+                VSOMEIP_ERROR << __func__
                     << ": Received a SubscribeEventGroup entry for unknown eventgroup "
                     << " from: " << its_sender.to_string(ec) << " for: ["
                     << std::hex << std::setw(4) << std::setfill('0') << its_service << "."
@@ -1741,6 +1762,9 @@ service_discovery_impl::process_eventgroupentry(
                     << std::hex << std::setw(4) << std::setfill('0') << its_eventgroup
                     << "] session: " << std::hex << std::setw(4) << std::setfill('0')
                     << its_session << ", ttl: " << its_ttl;
+            }
+
+
             if (its_ttl > 0) {
                 insert_subscription_ack(_acknowledgement, its_info, 0, nullptr, its_clients);
             }
@@ -1766,10 +1790,14 @@ service_discovery_impl::process_eventgroupentry(
     if(its_type == entry_type_e::SUBSCRIBE_EVENTGROUP) {
         if (_destination.is_multicast() ) {
             boost::system::error_code ec;
-            VSOMEIP_ERROR << __func__
+            
+            if (mKeyLogEnableFlag.load())
+            {
+                VSOMEIP_ERROR << __func__
                     << ": Received a SubscribeEventGroup entry on multicast address "
                     << its_sender.to_string(ec) << " session: "
                     << std::hex << std::setw(4) << std::setfill('0') << its_session;
+            }
             if (its_ttl > 0) {
                 insert_subscription_ack(_acknowledgement, its_info, 0, nullptr, its_clients);
             }
@@ -2609,7 +2637,7 @@ service_discovery_impl::check_ipv4_address(
         const boost::asio::ip::address& its_address) const {
     //Check unallowed ipv4 address
     bool is_valid = true;
-
+    
     const boost::asio::ip::address_v4::bytes_type its_unicast_address =
             unicast_.to_v4().to_bytes();
     const boost::asio::ip::address_v4::bytes_type endpoint_address =

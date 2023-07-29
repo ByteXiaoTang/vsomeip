@@ -84,7 +84,8 @@ routing_manager_impl::routing_manager_impl(routing_manager_host *_host) :
         pending_remote_offer_id_(0),
         last_resume_(std::chrono::steady_clock::now().min()),
         statistics_log_timer_(_host->get_io()),
-        ignored_statistics_counter_(0)
+        ignored_statistics_counter_(0),
+        mKeyLogEnableFlag(false)
 {
 }
 
@@ -134,6 +135,24 @@ void routing_manager_impl::init() {
             VSOMEIP_ERROR << "Service Discovery module could not be loaded!";
             std::exit(EXIT_FAILURE);
         }
+    }
+
+
+        //add by tmz 2021/04/12
+    {
+        const char *its_name = getenv(VSOMEIP_ENV_SD_KEY_LOG_ENABLE_FLAG);
+        if (nullptr != its_name) {
+            std::string log_enable  = its_name;
+            if (log_enable == "enable")
+            {
+                mKeyLogEnableFlag = true;
+            }
+            else
+            {
+                mKeyLogEnableFlag = false;
+            }
+        }
+        VSOMEIP_WARNING << "VSOMEIP_ENV_SD_KEY_LOG_ENABLE_FLAG=" << mKeyLogEnableFlag.load();
     }
 
 #ifndef ANDROID
@@ -2867,7 +2886,9 @@ void routing_manager_impl::on_subscribe_ack(client_t _client,
                         its_subscription->get_subscriber());
                 discovery_->update_remote_subscription(its_subscription);
 
-                VSOMEIP_INFO << "REMOTE SUBSCRIBE("
+                if (mKeyLogEnableFlag.load())
+                {
+                    VSOMEIP_INFO << "REMOTE SUBSCRIBE("
                     << std::hex << std::setw(4) << std::setfill('0') << _client <<"): ["
                     << std::hex << std::setw(4) << std::setfill('0') << _service << "."
                     << std::hex << std::setw(4) << std::setfill('0') << _instance << "."
@@ -2876,6 +2897,8 @@ void routing_manager_impl::on_subscribe_ack(client_t _client,
                     << ":" << std::dec << its_subscription->get_subscriber()->get_port()
                     << (its_subscription->get_subscriber()->is_reliable() ? " reliable" : " unreliable")
                     << " was accepted";
+                }       
+
 
                 return;
             }
@@ -2952,7 +2975,10 @@ void routing_manager_impl::on_subscribe_nack(client_t _client,
 
             if (discovery_) {
                 discovery_->update_remote_subscription(its_subscription);
-                VSOMEIP_INFO << "REMOTE SUBSCRIBE("
+                
+                if (mKeyLogEnableFlag.load())
+                {
+                    VSOMEIP_INFO << "REMOTE SUBSCRIBE("
                     << std::hex << std::setw(4) << std::setfill('0') << _client <<"): ["
                     << std::hex << std::setw(4) << std::setfill('0') << _service << "."
                     << std::hex << std::setw(4) << std::setfill('0') << _instance << "."
@@ -2961,6 +2987,9 @@ void routing_manager_impl::on_subscribe_nack(client_t _client,
                     << ":" << std::dec << its_subscription->get_subscriber()->get_port()
                     << (its_subscription->get_subscriber()->is_reliable() ? " reliable" : " unreliable")
                     << " was not accepted";
+                }
+
+
             }
         }
     }
@@ -3167,21 +3196,15 @@ routing_manager_impl::expire_subscriptions(bool _force) {
             }
 
             if (s.first->get_unreliable()) {
-                VSOMEIP_INFO << "Expired subscription ["
+                if (mKeyLogEnableFlag.load())
+                {
+                  VSOMEIP_INFO << "Expired subscription ["
                         << std::hex << std::setfill('0') << std::setw(4) << its_service << "."
                         << std::hex << std::setfill('0') << std::setw(4) << its_instance << "."
                         << std::hex << std::setfill('0') << std::setw(4) << its_eventgroup << "] unreliable from "
                         << s.first->get_unreliable()->get_address() << ":"
-                        << std::dec << s.first->get_unreliable()->get_port();
-            }
-
-            if (s.first->get_reliable()) {
-                VSOMEIP_INFO << "Expired subscription ["
-                        << std::hex << std::setfill('0') << std::setw(4) << its_service << "."
-                        << std::hex << std::setfill('0') << std::setw(4) << its_instance << "."
-                        << std::hex << std::setfill('0') << std::setw(4) << its_eventgroup << "] reliable from "
-                        << s.first->get_reliable()->get_address() << ":"
-                        << std::dec << s.first->get_reliable()->get_port();
+                        << std::dec << s.first->get_unreliable()->get_port();                  
+                }      
             }
         }
     }

@@ -472,6 +472,10 @@ private:
 
     std::mutex offer_mutex_;
     std::mutex check_ttl_mutex_;
+
+
+    //add by tmz 2021/04/12
+    std::atomic<bool> mKeyLogEnableFlag;
 };
 
 }  // namespace sd

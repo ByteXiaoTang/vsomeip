@@ -233,6 +233,9 @@ enum class port_type_e {
     PT_UNKNOWN
 };
 
+//add by tmz 2021/04/12
+#define VSOMEIP_ENV_SD_KEY_LOG_ENABLE_FLAG  "VSOMEIP_ENV_SD_KEY_LOG_ENABLE_FLAG"
+
 } // namespace vsomeip_v3
 
 #endif // VSOMEIP_V3_INTERNAL_HPP_

@@ -46,11 +46,11 @@ configuration::~configuration() {}
 uint32_t application_impl::app_counter__ = 0;
 std::mutex application_impl::app_counter_mutex__;
 
-application_impl::application_impl(const std::string &_name)
+application_impl::application_impl(const std::string& app_name, const std::string& cfg_file)
         : runtime_(runtime::get()),
           client_(VSOMEIP_CLIENT_UNSET),
           session_(0),
-          is_initialized_(false), name_(_name),
+          is_initialized_(false), name_(app_name),mConfigFile(cfg_file),
           work_(std::make_shared<boost::asio::io_service::work>(io_)),
           routing_(0),
           state_(state_type_e::ST_DEREGISTERED),
@@ -121,11 +121,17 @@ bool application_impl::init() {
         return true;
     }
     // Application name
-    if (name_ == "") {
-        const char *its_name = getenv(VSOMEIP_ENV_APPLICATION_NAME);
-        if (nullptr != its_name) {
-            name_ = its_name;
-        }
+    // if (name_ == "") {
+    //     const char *its_name = getenv(VSOMEIP_ENV_APPLICATION_NAME);
+    //     if (nullptr != its_name) {
+    //         name_ = its_name;
+    //     }
+    // }
+
+    if (name_ == "" || mConfigFile == "")
+    {
+        VSOMEIP_ERROR << "config file or app name null.";
+        std::exit(EXIT_FAILURE);
     }
 
     std::string configuration_path;
@@ -155,11 +161,16 @@ bool application_impl::init() {
         }
 #else
         configuration_ = std::dynamic_pointer_cast<configuration>(
-                std::make_shared<vsomeip_v3::cfg::configuration_impl>());
+                std::make_shared<vsomeip_v3::cfg::configuration_impl>(mConfigFile));
         if (configuration_path.length()) {
             configuration_->set_configuration_path(configuration_path);
         }
-        configuration_->load(name_);
+        if (!configuration_->load(name_))
+        {
+            std::cerr << "configuration load error!" << std::endl;
+            VSOMEIP_INFO << "configuration load error";
+            std::exit(EXIT_FAILURE);    
+        }
 #endif // VSOMEIP_ENABLE_MULTIPLE_ROUTING_MANAGERS
     }
 
@@ -840,10 +851,22 @@ void application_impl::send(std::shared_ptr<message> _message) {
         // in case of requests set the request-id (client-id|session-id)
         if (is_request) {
             _message->set_client(client_);
-            _message->set_session(get_session());
+            session_t real_sessionid = get_session();
+            session_t in_sessionid = _message->get_session(); 
+            _message->set_session(real_sessionid);
+            
+            if (message_type_e::MT_REQUEST ==  _message->get_message_type())
+            {
+                std::lock_guard<std::mutex> its_lock(send_req_session_handler_mutex_);
+                if (send_req_session_handler_){
+                    send_req_session_handler_(in_sessionid, real_sessionid);
+                }
+            }
+
         }
         // Always increment the session-id
         (void)routing_->send(client_, _message);
+
     }
 }
 
@@ -2532,6 +2555,12 @@ void application_impl::register_routing_state_handler(
         const auto rm_impl = std::dynamic_pointer_cast<routing_manager_impl>(routing_);
         rm_impl->register_routing_state_handler(_handler);
     }
+}
+
+//add by tmz 2021/02/20
+void application_impl::register_send_request_message_session_handler(send_request_message_session_t _handler){
+    std::lock_guard<std::mutex> its_lock(send_req_session_handler_mutex_);
+    send_req_session_handler_ = _handler;
 }
 
 bool application_impl::update_service_configuration(service_t _service,

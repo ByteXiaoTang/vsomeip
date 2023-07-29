@@ -40,7 +40,7 @@ class application_impl: public application,
         public routing_manager_host,
         public std::enable_shared_from_this<application_impl> {
 public:
-    VSOMEIP_EXPORT application_impl(const std::string &_name);
+    VSOMEIP_EXPORT application_impl(const std::string& app_name, const std::string& cfg_file);
     VSOMEIP_EXPORT  ~application_impl();
 
     VSOMEIP_EXPORT bool init();
@@ -183,6 +183,9 @@ public:
 
     VSOMEIP_EXPORT void register_routing_ready_handler(routing_ready_handler_t _handler);
     VSOMEIP_EXPORT void register_routing_state_handler(routing_state_handler_t _handler);
+    //add by tmz 2021/02/20
+    VSOMEIP_EXPORT void register_send_request_message_session_handler(send_request_message_session_t _handler);                                                 
+
 
     VSOMEIP_EXPORT bool update_service_configuration(service_t _service,
                                                      instance_t _instance,
@@ -315,6 +318,8 @@ private:
     bool is_initialized_;
 
     std::string name_;
+    std::string mConfigFile;
+
     std::shared_ptr<configuration> configuration_;
 
     boost::asio::io_service io_;
@@ -330,6 +335,10 @@ private:
     // vsomeip state handler
     std::mutex state_handler_mutex_;
     state_handler_t handler_;
+
+    // vsomeip send request message handler
+    std::mutex send_req_session_handler_mutex_;
+    send_request_message_session_t send_req_session_handler_;
 
     // vsomeip security mode
     security_mode_e security_mode_;

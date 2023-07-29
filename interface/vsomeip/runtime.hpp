@@ -75,7 +75,7 @@ public:
      *
      */
     virtual std::shared_ptr<application> create_application(
-            const std::string &_name = "") = 0;
+            const std::string &_name , const std::string& cfg_file) = 0;
 
     /**
      *

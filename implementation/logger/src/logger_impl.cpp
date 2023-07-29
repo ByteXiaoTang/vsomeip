@@ -14,12 +14,15 @@ namespace vsomeip_v3 {
 namespace logger {
 
 std::mutex logger_impl::mutex__;
-
+bool logger_impl::init_flag = false;
 void
 logger_impl::init(const std::shared_ptr<configuration> &_configuration) {
     std::lock_guard<std::mutex> its_lock(mutex__);
     auto its_logger = logger_impl::get();
-    its_logger->configuration_ = _configuration;
+    
+    if (!init_flag)
+    {
+        its_logger->configuration_ = _configuration;
 
 #ifdef USE_DLT
 #   define VSOMEIP_LOG_DEFAULT_CONTEXT_ID              "VSIP"
@@ -31,6 +34,10 @@ logger_impl::init(const std::shared_ptr<configuration> &_configuration) {
 
     DLT_REGISTER_CONTEXT(its_logger->dlt_, its_context_id.c_str(), VSOMEIP_LOG_DEFAULT_CONTEXT_NAME);
 #endif
+
+        init_flag = true;
+    }
+
 }
 
 logger_impl::~logger_impl() {

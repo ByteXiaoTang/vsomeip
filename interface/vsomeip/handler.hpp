@@ -82,6 +82,7 @@ typedef std::function<void(const ip_address_t&)> reboot_notification_handler_t;
 typedef std::function<void()> routing_ready_handler_t;
 typedef std::function<void(routing_state_e)> routing_state_handler_t;
 typedef std::function<void(security_update_state_e)> security_update_handler_t;
+typedef std::function<void(session_t, session_t)> send_request_message_session_t; //1st- in session, 2nd ---real sessionid
 
 } // namespace vsomeip_v3
 
